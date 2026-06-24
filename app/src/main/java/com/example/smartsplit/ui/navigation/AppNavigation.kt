@@ -22,14 +22,14 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = if (authState.isAuthenticated) "groups" else "login"
+        startDestination = if (authState.isAuthenticated) "main" else "login"
     ) {
         composable("login") {
             LogInScreen(
                 onRegisterClick = { navController.navigate("register") },
                 onLoginClick = { email, password -> authViewModel.login(email, password) },
                 onLoginSuccess = { 
-                    navController.navigate("groups") {
+                    navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -43,7 +43,7 @@ fun AppNavigation(
                 onLoginClick = { navController.popBackStack() },
                 onRegisterClick = { email, password -> authViewModel.register(email, password) },
                 onRegisterSuccess = { 
-                    navController.navigate("groups") {
+                    navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -51,16 +51,14 @@ fun AppNavigation(
                 isAuthenticated = authState.isAuthenticated
             )
         }
-        composable("groups") {
-            GroupsScreen(
+        composable("main") {
+            com.example.smartsplit.ui.screens.MainScreen(
+                parentNavController = navController,
                 onLogoutClick = {
                     authViewModel.logout()
                     navController.navigate("login") {
-                        popUpTo("groups") { inclusive = true }
+                        popUpTo("main") { inclusive = true }
                     }
-                },
-                onGroupClick = { groupId ->
-                    navController.navigate("groupDetails/$groupId")
                 }
             )
         }
@@ -70,6 +68,13 @@ fun AppNavigation(
                 groupId = groupId,
                 onBackClick = { navController.popBackStack() },
                 onScanClick = { navController.navigate("scanReceipt/$groupId") }
+            )
+        }
+        composable("chat/{chatId}") { backStackEntry ->
+            val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+            com.example.smartsplit.ui.screens.ChatScreen(
+                chatId = chatId,
+                onBackClick = { navController.popBackStack() }
             )
         }
         composable("scanReceipt/{groupId}") { backStackEntry ->

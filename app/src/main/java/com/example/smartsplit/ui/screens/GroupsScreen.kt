@@ -43,29 +43,22 @@ fun GroupsScreen(
         Group("3", "Friday Dinner", 6)
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Groups") },
-                actions = {
-                    IconButton(onClick = onLogoutClick) {
-                        Icon(Icons.Default.Logout, contentDescription = "Log Out")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Add new group */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Group")
-            }
-        }
-    ) { paddingValues ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+    ) {
+        Text(
+            text = "My Groups",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 80.dp) // padding for bottom bar
         ) {
             items(groups) { group ->
                 GroupItem(
