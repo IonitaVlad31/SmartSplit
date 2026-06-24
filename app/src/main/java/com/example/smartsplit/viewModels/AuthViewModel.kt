@@ -64,10 +64,12 @@ class AuthViewModel : ViewModel() {
                     val firebaseUser = task.result?.user
                     if (firebaseUser != null) {
                         // Create the User document locally
+                        val namePrefix = email.substringBefore("@")
                         val newUser = User(
                             id = firebaseUser.uid,
                             email = email,
-                            name = email.substringBefore("@") // Default name based on email prefix
+                            name = namePrefix,
+                            handle = namePrefix
                         )
                         // Save it to Firestore
                         viewModelScope.launch {

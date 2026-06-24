@@ -156,7 +156,11 @@ fun NavigationGraph(
             )
         }
         composable(BottomNavItem.Friends.route) {
-            FriendsScreen()
+            FriendsScreen(
+                onChatClick = { chatId ->
+                    parentNavController.navigate("chat/$chatId")
+                }
+            )
         }
         composable(BottomNavItem.Add.route) {
             ScanReceiptScreen(onBackClick = null)

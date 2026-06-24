@@ -5,6 +5,7 @@ import com.example.smartsplit.data.model.Group
 import com.example.smartsplit.data.model.Message
 import com.example.smartsplit.data.model.User
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.tasks.await
 
 class FirebaseRepository {
@@ -65,5 +66,121 @@ class FirebaseRepository {
         val docRef = if (message.id.isEmpty()) db.collection("messages").document() else db.collection("messages").document(message.id)
         val msgWithId = message.copy(id = docRef.id)
         docRef.set(msgWithId).await()
+        
+        if (msgWithId.chatId.isNotEmpty()) {
+            try {
+                db.collection("chatRooms").document(msgWithId.chatId).update(
+                    mapOf(
+                        "lastMessage" to msgWithId.text,
+                        "lastTimestamp" to msgWithId.timestamp
+                    )
+                ).await()
+            } catch (e: Exception) {
+                // Ignore if chat room doesn't exist yet
+            }
+        }
+    }
+
+    suspend fun createChatRoom(room: com.example.smartsplit.data.model.ChatRoom): String {
+        val docRef = if (room.id.isEmpty()) db.collection("chatRooms").document() else db.collection("chatRooms").document(room.id)
+        val roomWithId = room.copy(id = docRef.id)
+        docRef.set(roomWithId).await()
+        return docRef.id
+    }
+
+    fun observeUserChatRooms(userId: String): kotlinx.coroutines.flow.Flow<List<com.example.smartsplit.data.model.ChatRoom>> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("chatRooms")
+            .whereArrayContains("participantIds", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val rooms = snapshot.toObjects(com.example.smartsplit.data.model.ChatRoom::class.java)
+                    trySend(rooms.sortedByDescending { it.lastTimestamp })
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    fun observeMessages(chatId: String): kotlinx.coroutines.flow.Flow<List<Message>> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("messages")
+            .whereEqualTo("chatId", chatId)
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val messages = snapshot.toObjects(Message::class.java)
+                    trySend(messages)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun searchUserByHandle(handle: String): User? {
+        val cleanHandle = if (handle.startsWith("@")) handle.substring(1) else handle
+        val snapshot = db.collection("users")
+            .whereEqualTo("handle", cleanHandle)
+            .get()
+            .await()
+        return snapshot.documents.firstOrNull()?.toObject(User::class.java)
+    }
+
+    suspend fun addFriend(currentUserId: String, friendId: String) {
+        if (currentUserId == friendId) return
+        
+        val currentUserRef = db.collection("users").document(currentUserId)
+        val friendUserRef = db.collection("users").document(friendId)
+        
+        db.runTransaction { transaction ->
+            val currentUser = transaction.get(currentUserRef).toObject(User::class.java)
+            val friendUser = transaction.get(friendUserRef).toObject(User::class.java)
+            
+            if (currentUser != null && friendUser != null) {
+                val updatedCurrentFriends = currentUser.friendIds.toMutableSet().apply { add(friendId) }.toList()
+                val updatedFriendFriends = friendUser.friendIds.toMutableSet().apply { add(currentUserId) }.toList()
+                
+                transaction.update(currentUserRef, "friendIds", updatedCurrentFriends)
+                transaction.update(friendUserRef, "friendIds", updatedFriendFriends)
+            }
+        }.await()
+    }
+
+    suspend fun getFriends(friendIds: List<String>): List<User> {
+        if (friendIds.isEmpty()) return emptyList()
+        val chunks = friendIds.chunked(30)
+        val friends = mutableListOf<User>()
+        for (chunk in chunks) {
+            val snapshot = db.collection("users")
+                .whereIn("id", chunk)
+                .get()
+                .await()
+            friends.addAll(snapshot.toObjects(User::class.java))
+        }
+        return friends
+    }
+
+    suspend fun getOrCreateDirectChat(userId1: String, userId2: String): String {
+        val snapshot = db.collection("chatRooms")
+            .whereArrayContains("participantIds", userId1)
+            .get()
+            .await()
+        
+        val existingRoom = snapshot.toObjects(com.example.smartsplit.data.model.ChatRoom::class.java)
+            .find { it.participantIds.contains(userId2) && it.participantIds.size == 2 }
+            
+        if (existingRoom != null) {
+            return existingRoom.id
+        }
+        
+        val newRoom = com.example.smartsplit.data.model.ChatRoom(
+            participantIds = listOf(userId1, userId2),
+            name = "" 
+        )
+        return createChatRoom(newRoom)
     }
 }

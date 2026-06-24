@@ -17,19 +17,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-data class ChatItem(val id: String, val name: String, val lastMessage: String, val time: String, val unread: Int)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartsplit.data.model.ChatRoom
+import com.example.smartsplit.viewModels.InboxViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InboxScreen(onChatClick: (String) -> Unit) {
-    val chats = listOf(
-        ChatItem("chat1", "Alice Doe", "Sent an attachment: receipt.jpg", "10:24", 2),
-        ChatItem("chat2", "Trip to Paris", "Bob added a new expense: Dinner", "09:12", 0),
-        ChatItem("chat3", "Roommates", "Who's paying the rent this month?", "Yesterday", 5),
-        ChatItem("chat4", "Diana Prince", "Thanks for splitting!", "Mon", 0)
-    )
-    
+fun InboxScreen(
+    onChatClick: (String) -> Unit,
+    viewModel: InboxViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
@@ -59,18 +60,63 @@ fun InboxScreen(onChatClick: (String) -> Unit) {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        LazyColumn(
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            items(chats.filter { it.name.contains(searchQuery, ignoreCase = true) }) { chat ->
-                ChatListItem(chat = chat, onClick = { onChatClick(chat.id) })
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (state.error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
+            }
+        } else if (state.chatRooms.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = "Nu ai niciun mesaj", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(bottom = 100.dp)
+            ) {
+                val filteredChats = state.chatRooms.filter { room ->
+                    val otherUserId = room.participantIds.find { it != state.currentUserId }
+                    val otherUser = state.otherUsers[otherUserId]
+                    val chatName = if (room.name.isNotBlank()) room.name else otherUser?.name ?: ""
+                    val chatHandle = otherUser?.handle ?: ""
+                    chatName.contains(searchQuery, ignoreCase = true) || 
+                    chatHandle.contains(searchQuery, ignoreCase = true) || 
+                    (room.name.isEmpty() && "Chat".contains(searchQuery, ignoreCase = true))
+                }
+                items(filteredChats) { room ->
+                    val otherUserId = room.participantIds.find { it != state.currentUserId }
+                    val otherUser = state.otherUsers[otherUserId]
+                    ChatListItem(
+                        room = room, 
+                        currentUserId = state.currentUserId,
+                        otherUser = otherUser,
+                        onClick = { onChatClick(room.id) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ChatListItem(chat: ChatItem, onClick: () -> Unit) {
+fun ChatListItem(room: ChatRoom, currentUserId: String, otherUser: com.example.smartsplit.data.model.User?, onClick: () -> Unit) {
+    val displayName = if (room.name.isNotBlank()) room.name 
+                      else otherUser?.let { "${it.name} (@${it.handle})" } ?: "Chat Privat"
+    val displayInitial = if (room.name.isNotBlank()) room.name.firstOrNull()?.toString() ?: "C"
+                         else otherUser?.name?.firstOrNull()?.toString() ?: "C"
+    
+    // Formatting timestamp
+    val timeString = if (room.lastTimestamp > 0) {
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        sdf.format(Date(room.lastTimestamp))
+    } else {
+        ""
+    }
+    
+    val unreadCount = room.unreadCount[currentUserId] ?: 0
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -86,7 +132,7 @@ fun ChatListItem(chat: ChatItem, onClick: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = chat.name.first().toString(),
+                text = displayInitial.uppercase(),
                 color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge
@@ -100,12 +146,12 @@ fun ChatListItem(chat: ChatItem, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = chat.name, 
-                    fontWeight = if (chat.unread > 0) FontWeight.Bold else FontWeight.Normal,
+                    text = displayName, 
+                    fontWeight = if (unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleMedium
                 )
-                Text(text = chat.time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = timeString, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -114,14 +160,14 @@ fun ChatListItem(chat: ChatItem, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = chat.lastMessage, 
+                    text = room.lastMessage.takeIf { it.isNotEmpty() } ?: "Fără mesaje", 
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (chat.unread > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (unreadCount > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
-                if (chat.unread > 0) {
+                if (unreadCount > 0) {
                     Box(
                         modifier = Modifier
                             .size(24.dp)
@@ -130,7 +176,7 @@ fun ChatListItem(chat: ChatItem, onClick: () -> Unit) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = chat.unread.toString(),
+                            text = unreadCount.toString(),
                             color = MaterialTheme.colorScheme.onPrimary,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold

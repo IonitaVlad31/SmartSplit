@@ -16,29 +16,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
-data class ChatMessage(val id: String, val text: String, val isMine: Boolean)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartsplit.data.model.Message
+import com.example.smartsplit.viewModels.ChatViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(chatId: String, onBackClick: () -> Unit) {
-    var messages by remember { 
-        mutableStateOf(
-            listOf(
-                ChatMessage("1", "Salut!", false),
-                ChatMessage("2", "Cand platim restanta la curent?", false),
-                ChatMessage("3", "Azi diseara o sa bag suma in aplicatie", true)
-            )
-        ) 
-    }
+fun ChatScreen(
+    chatId: String, 
+    onBackClick: () -> Unit,
+    viewModel: ChatViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
     
+    // Load chat when screen opens
+    LaunchedEffect(chatId) {
+        viewModel.loadChat(chatId)
+    }
+
     var currentMessage by remember { mutableStateOf("") }
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text(if (chatId == "chat1") "Alice Doe" else "Grupul Nostru") },
+                title = { Text(state.chatTitle) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -72,7 +74,7 @@ fun ChatScreen(chatId: String, onBackClick: () -> Unit) {
                 IconButton(
                     onClick = {
                         if (currentMessage.isNotBlank()) {
-                            messages = messages + ChatMessage(System.currentTimeMillis().toString(), currentMessage, true)
+                            viewModel.sendMessage(chatId, currentMessage)
                             currentMessage = ""
                         }
                     },
@@ -84,27 +86,34 @@ fun ChatScreen(chatId: String, onBackClick: () -> Unit) {
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            reverseLayout = true
-        ) {
-            items(messages.reversed()) { message ->
-                MessageBubble(message)
-                Spacer(modifier = Modifier.height(8.dp))
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                reverseLayout = true
+            ) {
+                items(state.messages.reversed()) { message ->
+                    MessageBubble(message, state.currentUserId)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun MessageBubble(message: ChatMessage) {
-    val backgroundColor = if (message.isMine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-    val contentColor = if (message.isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
-    val alignment = if (message.isMine) Alignment.CenterEnd else Alignment.CenterStart
-    val shape = if (message.isMine) {
+fun MessageBubble(message: Message, currentUserId: String) {
+    val isMine = message.senderId == currentUserId
+    val backgroundColor = if (isMine) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
+    val contentColor = if (isMine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+    val alignment = if (isMine) Alignment.CenterEnd else Alignment.CenterStart
+    val shape = if (isMine) {
         RoundedCornerShape(16.dp, 16.dp, 0.dp, 16.dp)
     } else {
         RoundedCornerShape(16.dp, 16.dp, 16.dp, 0.dp)
