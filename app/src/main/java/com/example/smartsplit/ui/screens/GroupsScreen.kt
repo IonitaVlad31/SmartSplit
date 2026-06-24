@@ -1,5 +1,6 @@
 package com.example.smartsplit.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +33,8 @@ data class Group(val id: String, val name: String, val membersCount: Int)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsScreen(
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    onGroupClick: (String) -> Unit = {}
 ) {
     // Mock data for groups
     val groups = listOf(
@@ -66,16 +68,21 @@ fun GroupsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(groups) { group ->
-                GroupItem(group = group)
+                GroupItem(
+                    group = group,
+                    onClick = { onGroupClick(group.id) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun GroupItem(group: Group) {
+fun GroupItem(group: Group, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
