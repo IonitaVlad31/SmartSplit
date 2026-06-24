@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,9 +26,11 @@ import com.example.smartsplit.viewModels.ProfileViewModel
 @Composable
 fun ProfileScreen(
     onLogoutClick: () -> Unit,
+    onCurrenciesClick: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showPlaceholderDialog by remember { mutableStateOf<String?>(null) }
@@ -194,9 +197,16 @@ fun ProfileScreen(
                 showPlaceholderDialog = "Payment Methods"
             }
             Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Notifications, text = "Notifications") { 
-                showPlaceholderDialog = "Notifications"
+            MenuButton(icon = Icons.Default.Add, text = "Curs Valutar") { 
+                onCurrenciesClick()
             }
+            Spacer(modifier = Modifier.height(12.dp))
+            MenuSwitch(
+                icon = Icons.Default.Notifications,
+                text = "Notifications",
+                checked = notificationsEnabled,
+                onCheckedChange = { viewModel.toggleNotifications(it) }
+            )
             Spacer(modifier = Modifier.height(12.dp))
             MenuButton(icon = Icons.Default.Security, text = "Security & Privacy") { 
                 showPlaceholderDialog = "Security & Privacy"
@@ -252,6 +262,26 @@ fun MenuButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: Stri
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(16.dp))
             Text(text, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+fun MenuSwitch(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onBackground),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), 
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
     }
 }

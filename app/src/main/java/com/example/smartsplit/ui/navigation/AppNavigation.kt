@@ -93,5 +93,10 @@ fun AppNavigation(
                 }
             )
         }
+        composable("currencies") {
+            com.example.smartsplit.ui.screens.CurrenciesScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     }
 }

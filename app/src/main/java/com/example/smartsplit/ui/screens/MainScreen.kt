@@ -169,7 +169,10 @@ fun NavigationGraph(
             )
         }
         composable(BottomNavItem.Profile.route) {
-            ProfileScreen(onLogoutClick = onLogoutClick)
+            ProfileScreen(
+                onLogoutClick = onLogoutClick,
+                onCurrenciesClick = { parentNavController.navigate("currencies") }
+            )
         }
     }
 }
