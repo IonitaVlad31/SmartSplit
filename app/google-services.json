@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "148683866726",
+    "project_id": "smartsplit-31a54",
+    "storage_bucket": "smartsplit-31a54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148683866726:android:019a6b105fed6374d563a7",
+        "android_client_info": {
+          "package_name": "com.example.smartsplit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj2f7AuIaQU8KhohsqhRHfBzAwyHWm1rY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
