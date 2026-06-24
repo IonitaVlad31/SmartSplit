@@ -67,13 +67,16 @@ fun LogInScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo removed temporarily
-
-        Text(
-            text = "SmartSplit",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.headlineLarge
+        Image(
+            painter = painterResource(id = com.example.smartsplit.R.drawable.logo_cropped),
+            contentDescription = "App Logo",
+            modifier = Modifier
+                .size(140.dp)
+                .clip(RoundedCornerShape(24.dp))
         )
+        Spacer(modifier = Modifier.height(24.dp))
+
+
         Text(
             text = "Log In Page",
             color = MaterialTheme.colorScheme.secondary,

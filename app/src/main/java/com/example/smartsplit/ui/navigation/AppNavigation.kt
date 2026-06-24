@@ -6,6 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.navigation.compose.rememberNavController
 import com.example.smartsplit.ui.screens.GroupDetailsScreen
 import com.example.smartsplit.ui.screens.GroupsScreen
@@ -22,7 +25,11 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = if (authState.isAuthenticated) "main" else "login"
+        startDestination = if (authState.isAuthenticated) "main" else "login",
+        enterTransition = { fadeIn(animationSpec = tween(300)) },
+        exitTransition = { fadeOut(animationSpec = tween(300)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(300)) },
+        popExitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
         composable("login") {
             LogInScreen(

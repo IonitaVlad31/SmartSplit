@@ -35,6 +35,7 @@ fun ChatScreen(chatId: String, onBackClick: () -> Unit) {
     var currentMessage by remember { mutableStateOf("") }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text(if (chatId == "chat1") "Alice Doe" else "Grupul Nostru") },

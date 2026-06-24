@@ -3,6 +3,7 @@ package com.example.smartsplit.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,10 +15,16 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -39,9 +46,11 @@ fun MainScreen(
     val navController = rememberNavController()
 
     Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         bottomBar = { BottomNavigationBar(navController = navController) },
         content = { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues)) {
+            // Use fillMaxSize so content goes UNDER the navigation bar
+            Box(modifier = Modifier.fillMaxSize()) {
                 NavigationGraph(navController = navController, parentNavController = parentNavController, onLogoutClick = onLogoutClick)
             }
         }
@@ -59,8 +68,9 @@ fun BottomNavigationBar(navController: NavController) {
     )
     
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+        containerColor = androidx.compose.ui.graphics.Color(0xEE050505), // Very dark, almost black, with slight transparency
+        contentColor = androidx.compose.ui.graphics.Color.White,
+        modifier = Modifier.background(androidx.compose.ui.graphics.Color(0xEE050505))
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
@@ -82,11 +92,16 @@ fun BottomNavigationBar(navController: NavController) {
                                     restoreState = true
                                 }
                             },
-                            containerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                            elevation = FloatingActionButtonDefaults.elevation(0.dp),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.size(48.dp)
                         ) {
-                            Icon(item.icon, contentDescription = "Add", tint = MaterialTheme.colorScheme.onPrimary)
+                            Image(
+                                painter = painterResource(id = com.example.smartsplit.R.drawable.logo_cropped),
+                                contentDescription = "Add",
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                            )
                         }
                     },
                     selected = false, // Always keep it as an action button style
@@ -109,10 +124,10 @@ fun BottomNavigationBar(navController: NavController) {
                     },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedIconColor = androidx.compose.ui.graphics.Color.Gray,
                         selectedTextColor = MaterialTheme.colorScheme.primary,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        indicatorColor = MaterialTheme.colorScheme.surfaceVariant
+                        unselectedTextColor = androidx.compose.ui.graphics.Color.Gray,
+                        indicatorColor = androidx.compose.ui.graphics.Color.Transparent
                     )
                 )
             }
@@ -126,7 +141,12 @@ fun NavigationGraph(
     parentNavController: NavController,
     onLogoutClick: () -> Unit
 ) {
-    NavHost(navController, startDestination = BottomNavItem.Home.route) {
+    NavHost(
+        navController = navController, 
+        startDestination = BottomNavItem.Home.route,
+        enterTransition = { fadeIn(animationSpec = tween(300)) },
+        exitTransition = { fadeOut(animationSpec = tween(300)) }
+    ) {
         composable(BottomNavItem.Home.route) {
             GroupsScreen(
                 onGroupClick = { groupId ->
@@ -140,10 +160,7 @@ fun NavigationGraph(
             FriendsScreen()
         }
         composable(BottomNavItem.Add.route) {
-            // Temporary screen or could just open a bottom sheet modal
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                Text("Add New Group / Expense Overlay")
-            }
+            ScanReceiptScreen(onBackClick = null)
         }
         composable(BottomNavItem.Inbox.route) {
             InboxScreen(

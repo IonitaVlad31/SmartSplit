@@ -46,6 +46,7 @@ fun GroupDetailsScreen(
     val transactions = remember(expenses) { DebtMinimizer.minimizeDebts(expenses) }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text("Trip to Paris") },
@@ -88,6 +89,13 @@ fun GroupDetailsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Chart Section
+            item {
+                AnimatedPieChart(expenses)
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+            
+
             // Balances / Settle Up Section
             item {
                 Text(
@@ -219,6 +227,91 @@ fun ExpenseItem(expense: Expense) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+@Composable
+fun AnimatedPieChart(expenses: List<com.example.smartsplit.util.Expense>) {
+    // Calculate total spent per person
+    val spendingPerPerson = expenses.groupBy { it.payerId }
+        .mapValues { it.value.sumOf { exp -> exp.amount } }
+    
+    val totalSpending = spendingPerPerson.values.sum()
+    if (totalSpending <= 0.0) return
+
+    val angles = spendingPerPerson.values.map { (it / totalSpending) * 360f }
+    val colors = listOf(
+        androidx.compose.ui.graphics.Color(0xFFFF3B30), // Vibrant Red
+        androidx.compose.ui.graphics.Color(0xFF34C759), // Vibrant Green
+        androidx.compose.ui.graphics.Color(0xFF007AFF), // Vibrant Blue
+        androidx.compose.ui.graphics.Color(0xFFFF9500), // Vibrant Orange
+        androidx.compose.ui.graphics.Color(0xFFAF52DE)  // Vibrant Purple
+    )
+
+    val animationProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+    
+    LaunchedEffect(expenses) {
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 1500)
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                var startAngle = -90f
+                val sweepAngles = angles.map { it.toFloat() * animationProgress.value }
+                
+                sweepAngles.forEachIndexed { index, sweepAngle ->
+                    drawArc(
+                        color = colors[index % colors.size],
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 40.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Butt)
+                    )
+                    startAngle += sweepAngle
+                }
+            }
+            Text(
+                text = "Total\n${totalSpending.toInt()} LEI",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Legend
+        // Chunk list into rows of 3 to avoid overflow if many people
+        val keys = spendingPerPerson.keys.toList()
+        keys.chunked(3).forEach { rowKeys ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                rowKeys.forEach { person ->
+                    val index = keys.indexOf(person)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(colors[index % colors.size]))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = person, 
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         }
     }
 }
