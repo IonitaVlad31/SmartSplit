@@ -30,7 +30,6 @@ fun GroupsScreen(
     onLogoutClick: () -> Unit = {},
     onGroupClick: (String) -> Unit = {}
 ) {
-    // Mock data for groups
     val groups = listOf(
         Group("1", "Trip to Paris", 4, Icons.Default.Flight, "You owe $15.00", false),
         Group("2", "Roommates", 3, Icons.Default.Home, "You are owed $40.00", true),
@@ -42,7 +41,6 @@ fun GroupsScreen(
             .fillMaxSize()
             .padding(top = 16.dp)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -69,8 +67,7 @@ fun GroupsScreen(
                 Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.onSurface)
             }
         }
-        
-        // Total Balance Card
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()

@@ -32,7 +32,6 @@ fun GroupDetailsScreen(
     onBackClick: () -> Unit = {},
     onScanClick: () -> Unit = {}
 ) {
-    // Mock data
     val members = listOf("Alice", "Bob", "Charlie", "David")
     
     var expenses by remember { 
@@ -89,14 +88,11 @@ fun GroupDetailsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Chart Section
             item {
                 AnimatedPieChart(expenses)
                 Spacer(modifier = Modifier.height(24.dp))
             }
-            
 
-            // Balances / Settle Up Section
             item {
                 Text(
                     text = "How to Settle Up",
@@ -126,7 +122,6 @@ fun GroupDetailsScreen(
                 }
             }
 
-            // Expenses Section
             item {
                 Text(
                     text = "Recent Expenses",
@@ -233,7 +228,6 @@ fun ExpenseItem(expense: Expense) {
 
 @Composable
 fun AnimatedPieChart(expenses: List<com.example.smartsplit.util.Expense>) {
-    // Calculate total spent per person
     val spendingPerPerson = expenses.groupBy { it.payerId }
         .mapValues { it.value.sumOf { exp -> exp.amount } }
     
@@ -288,9 +282,7 @@ fun AnimatedPieChart(expenses: List<com.example.smartsplit.util.Expense>) {
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Legend
-        // Chunk list into rows of 3 to avoid overflow if many people
+
         val keys = spendingPerPerson.keys.toList()
         keys.chunked(3).forEach { rowKeys ->
             Row(

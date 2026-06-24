@@ -62,8 +62,7 @@ fun FriendsScreen() {
         )
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Stories Row (Active Friends)
+
         Text(
             text = "Active Now",
             style = MaterialTheme.typography.titleMedium,
@@ -81,8 +80,7 @@ fun FriendsScreen() {
         }
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Vertical Friends List
+
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

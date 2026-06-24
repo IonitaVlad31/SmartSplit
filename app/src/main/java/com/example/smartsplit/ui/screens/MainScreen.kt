@@ -79,7 +79,6 @@ fun BottomNavigationBar(navController: NavController) {
             val isSelected = currentRoute == item.route
             
             if (item == BottomNavItem.Add) {
-                // The central 'Add' button
                 NavigationBarItem(
                     icon = {
                         FloatingActionButton(
@@ -104,7 +103,7 @@ fun BottomNavigationBar(navController: NavController) {
                             )
                         }
                     },
-                    selected = false, // Always keep it as an action button style
+                    selected = false,
                     onClick = { /* Handled by FAB onClick */ },
                     alwaysShowLabel = false
                 )

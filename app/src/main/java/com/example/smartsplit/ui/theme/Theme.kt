@@ -43,8 +43,8 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun SmartSplitTheme(
-    darkTheme: Boolean = true, // Force Dark Theme for the aesthetic
-    dynamicColor: Boolean = false, // Disable dynamic to keep the red/black
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme

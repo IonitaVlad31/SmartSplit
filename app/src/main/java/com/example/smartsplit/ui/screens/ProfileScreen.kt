@@ -7,21 +7,110 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartsplit.viewModels.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onLogoutClick: () -> Unit) {
+fun ProfileScreen(
+    onLogoutClick: () -> Unit,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
+
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showPlaceholderDialog by remember { mutableStateOf<String?>(null) }
+
+    // Dialog for placeholders (Payment, Notifications, Security)
+    if (showPlaceholderDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showPlaceholderDialog = null },
+            title = { Text(showPlaceholderDialog!!) },
+            text = { Text("Această funcționalitate va fi disponibilă în versiunea finală a proiectului!") },
+            confirmButton = {
+                TextButton(onClick = { showPlaceholderDialog = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Dialog for Editing Profile
+    if (showEditDialog && state.user != null) {
+        var editName by remember { mutableStateOf(state.user!!.name) }
+        var editHandle by remember { mutableStateOf(state.user!!.handle) }
+
+        AlertDialog(
+            onDismissRequest = { 
+                showEditDialog = false
+                viewModel.clearError()
+            },
+            title = { Text("Editează Profilul") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Nume / Nume complet") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editHandle,
+                        onValueChange = { editHandle = it },
+                        label = { Text("Handle (ex: nume123)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        prefix = { Text("@") }
+                    )
+                    if (state.saveError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = state.saveError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        viewModel.updateProfile(editName, editHandle) {
+                            showEditDialog = false
+                        }
+                    },
+                    enabled = !state.isSaving
+                ) {
+                    Text(if (state.isSaving) "Se salvează..." else "Salvează")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showEditDialog = false
+                        viewModel.clearError()
+                    },
+                    enabled = !state.isSaving
+                ) {
+                    Text("Anulează")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -42,6 +131,15 @@ fun ProfileScreen(onLogoutClick: () -> Unit) {
             }
         }
         
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return
+        }
+        
+        val user = state.user
+        
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -55,8 +153,9 @@ fun ProfileScreen(onLogoutClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
+                val initial = user?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
                 Text(
-                    text = "A", 
+                    text = initial, 
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold
@@ -64,20 +163,19 @@ fun ProfileScreen(onLogoutClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "My Name",
+                text = user?.name?.takeIf { it.isNotBlank() } ?: "User Fără Nume",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "@my_username",
+                text = if (!user?.handle.isNullOrBlank()) "@${user?.handle}" else "@adauga_handle",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
             Spacer(modifier = Modifier.height(32.dp))
-            
-            // Financial Stats Row
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -87,15 +185,22 @@ fun ProfileScreen(onLogoutClick: () -> Unit) {
             }
             
             Spacer(modifier = Modifier.height(32.dp))
-            
-            // Menu Items
-            MenuButton(icon = Icons.Default.Edit, text = "Edit Profile") { /* Edit profile */ }
+
+            MenuButton(icon = Icons.Default.Edit, text = "Edit Profile") { 
+                showEditDialog = true 
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Payment, text = "Payment Methods") { /* Payments */ }
+            MenuButton(icon = Icons.Default.Payment, text = "Payment Methods") { 
+                showPlaceholderDialog = "Payment Methods"
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Notifications, text = "Notifications") { /* Notifications */ }
+            MenuButton(icon = Icons.Default.Notifications, text = "Notifications") { 
+                showPlaceholderDialog = "Notifications"
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Security, text = "Security & Privacy") { /* Security */ }
+            MenuButton(icon = Icons.Default.Security, text = "Security & Privacy") { 
+                showPlaceholderDialog = "Security & Privacy"
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             

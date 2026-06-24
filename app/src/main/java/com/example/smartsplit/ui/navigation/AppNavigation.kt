@@ -89,8 +89,6 @@ fun AppNavigation(
             com.example.smartsplit.ui.screens.ScanReceiptScreen(
                 onBackClick = { navController.popBackStack() },
                 onAmountScanned = { amount ->
-                    // Here we could pass the amount back or save it
-                    // For now, just navigate back
                     navController.popBackStack()
                 }
             )
