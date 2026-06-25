@@ -24,6 +24,22 @@ class FirebaseRepository {
         db.collection("users").document(userId).update(updates).await()
     }
 
+    fun observeUser(userId: String): kotlinx.coroutines.flow.Flow<User?> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("users").document(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    trySend(snapshot.toObject(User::class.java))
+                } else {
+                    trySend(null)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
     suspend fun isHandleTaken(handle: String, excludeUserId: String): Boolean {
         if (handle.isBlank()) return false
         val snapshot = db.collection("users")
@@ -40,12 +56,60 @@ class FirebaseRepository {
         docRef.set(groupWithId).await()
     }
 
+    fun observeGroup(groupId: String): kotlinx.coroutines.flow.Flow<Group?> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("groups").document(groupId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    trySend(snapshot.toObject(Group::class.java))
+                } else {
+                    trySend(null)
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
+    fun observeGroupExpenses(groupId: String): kotlinx.coroutines.flow.Flow<List<Expense>> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("expenses")
+            .whereEqualTo("groupId", groupId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val expenses = snapshot.toObjects(Expense::class.java)
+                    trySend(expenses.sortedByDescending { it.timestamp })
+                }
+            }
+        awaitClose { listener.remove() }
+    }
+
     suspend fun getUserGroups(userId: String): List<Group> {
         val snapshot = db.collection("groups")
             .whereArrayContains("memberIds", userId)
             .get()
             .await()
         return snapshot.toObjects(Group::class.java)
+    }
+
+    fun observeUserGroups(userId: String): kotlinx.coroutines.flow.Flow<List<Group>> = kotlinx.coroutines.flow.callbackFlow {
+        val listener = db.collection("groups")
+            .whereArrayContains("memberIds", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val groups = snapshot.toObjects(Group::class.java)
+                    trySend(groups)
+                }
+            }
+        awaitClose { listener.remove() }
     }
 
     suspend fun addExpense(expense: Expense) {

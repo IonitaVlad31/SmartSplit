@@ -2,17 +2,13 @@ package com.example.smartsplit.util
 
 import kotlin.math.min
 
-/**
- * Represents a debt that needs to be paid.
- * [from] owes [to] an [amount] of money.
- */
-data class Transaction(val from: String, val to: String, val amount: Double)
+import com.example.smartsplit.data.model.Expense
 
 /**
- * An expense paid by [payerId] for a total [amount].
- * The cost is split equally among all [involvedIds].
+ * Represents a debt that needs to be paid.
+ * [from] (User ID) owes [to] (User ID) an [amount] of money.
  */
-data class Expense(val payerId: String, val amount: Double, val involvedIds: List<String>)
+data class Transaction(val from: String, val to: String, val amount: Double)
 
 object DebtMinimizer {
 
@@ -25,13 +21,13 @@ object DebtMinimizer {
 
         // 1. Calculate net balance for each person
         for (expense in expenses) {
-            val splitAmount = expense.amount / expense.involvedIds.size
+            val splitAmount = expense.amount / expense.splitAmong.size
             
             // Payer gets back the total amount they paid
-            balances[expense.payerId] = (balances[expense.payerId] ?: 0.0) + expense.amount
+            balances[expense.paidBy] = (balances[expense.paidBy] ?: 0.0) + expense.amount
             
             // Every involved person owes their share
-            for (person in expense.involvedIds) {
+            for (person in expense.splitAmong) {
                 balances[person] = (balances[person] ?: 0.0) - splitAmount
             }
         }

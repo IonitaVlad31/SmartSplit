@@ -19,18 +19,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.smartsplit.viewModels.ProfileViewModel
-
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.smartsplit.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onCurrenciesClick: () -> Unit = {},
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    groupsViewModel: com.example.smartsplit.viewModels.GroupsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    
+    val totalOwe by groupsViewModel.totalOwe.collectAsState()
+    val totalOwedToMe by groupsViewModel.totalOwedToMe.collectAsState()
+    
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                groupsViewModel.refreshBalances()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showPlaceholderDialog by remember { mutableStateOf<String?>(null) }
@@ -125,7 +148,7 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Profile",
+                text = "Profil",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -149,81 +172,101 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Premium Glowing Avatar
             Box(
                 modifier = Modifier
-                    .size(110.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)),
+                    .size(120.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                Color.Transparent
+                            ),
+                            radius = 200f
+                        )
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                val initial = user?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
-                Text(
-                    text = initial, 
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(Color(0xFF2B2B2B), Color(0xFF1A1A1A))
+                            )
+                        )
+                        .padding(4.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF101010)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_clean),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.fillMaxSize().padding(12.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = user?.name?.takeIf { it.isNotBlank() } ?: "User Fără Nume",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
             )
             Text(
                 text = if (!user?.handle.isNullOrBlank()) "@${user?.handle}" else "@adauga_handle",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray
             )
             
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                StatCard("You Owe", "$45.00", MaterialTheme.colorScheme.error)
-                StatCard("You are Owed", "$120.50", MaterialTheme.colorScheme.primary)
+                StatCard(modifier = Modifier.weight(1f), title = "Tu Datorezi", amount = String.format("%.2f LEI", totalOwe), color = MaterialTheme.colorScheme.error)
+                StatCard(modifier = Modifier.weight(1f), title = "Ai de Primit", amount = String.format("%.2f LEI", totalOwedToMe), color = Color(0xFF34C759))
             }
             
             Spacer(modifier = Modifier.height(32.dp))
 
-            MenuButton(icon = Icons.Default.Edit, text = "Edit Profile") { 
+            MenuButton(icon = Icons.Default.Edit, text = "Editează Profilul") { 
                 showEditDialog = true 
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Payment, text = "Payment Methods") { 
-                showPlaceholderDialog = "Payment Methods"
+            Spacer(modifier = Modifier.height(16.dp))
+            MenuButton(icon = Icons.Default.Payment, text = "Metode de Plată") { 
+                showPlaceholderDialog = "Metode de Plată"
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             MenuButton(icon = Icons.Default.Add, text = "Curs Valutar") { 
                 onCurrenciesClick()
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             MenuSwitch(
                 icon = Icons.Default.Notifications,
-                text = "Notifications",
+                text = "Notificări",
                 checked = notificationsEnabled,
                 onCheckedChange = { viewModel.toggleNotifications(it) }
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            MenuButton(icon = Icons.Default.Security, text = "Security & Privacy") { 
-                showPlaceholderDialog = "Security & Privacy"
+            Spacer(modifier = Modifier.height(16.dp))
+            MenuButton(icon = Icons.Default.Security, text = "Securitate și Confidențialitate") { 
+                showPlaceholderDialog = "Securitate și Confidențialitate"
             }
             
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
                 onClick = onLogoutClick,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(16.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.15f), contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Log Out", fontWeight = FontWeight.Bold)
+                Text("Deconectare", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
             Spacer(modifier = Modifier.height(100.dp))
         }
@@ -231,57 +274,76 @@ fun ProfileScreen(
 }
 
 @Composable
-fun StatCard(title: String, amount: String, color: androidx.compose.ui.graphics.Color) {
+fun StatCard(modifier: Modifier = Modifier, title: String, amount: String, color: Color) {
     Card(
-        modifier = Modifier.width(140.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp)
+        modifier = modifier.height(100.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF151515)),
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = amount, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = color)
+            Text(text = title, style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = amount, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = color)
         }
     }
 }
 
 @Composable
 fun MenuButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, onClick: () -> Unit) {
-    Button(
+    Surface(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onBackground),
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(16.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF1E1E1E)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Text(text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.White, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
         }
     }
 }
 
 @Composable
 fun MenuSwitch(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onBackground),
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Surface(
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), 
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 8.dp), 
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Box(
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF1E1E1E)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Text(text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color.White, modifier = Modifier.weight(1f))
+            Switch(
+                checked = checked, 
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = Color.Gray,
+                    uncheckedTrackColor = Color(0xFF2A2A2A)
+                )
+            )
         }
     }
 }

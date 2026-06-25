@@ -22,19 +22,40 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-data class Group(val id: String, val name: String, val membersCount: Int, val icon: ImageVector, val balance: String, val isPositive: Boolean)
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.Add
+import com.example.smartsplit.viewModels.GroupsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupsScreen(
+    viewModel: GroupsViewModel,
     onLogoutClick: () -> Unit = {},
     onGroupClick: (String) -> Unit = {}
 ) {
-    val groups = listOf(
-        Group("1", "Trip to Paris", 4, Icons.Default.Flight, "You owe $15.00", false),
-        Group("2", "Roommates", 3, Icons.Default.Home, "You are owed $40.00", true),
-        Group("3", "Friday Dinner", 6, Icons.Default.Restaurant, "Settled up", true)
-    )
+    val groups by viewModel.groups.collectAsState()
+    val friends by viewModel.friends.collectAsState()
+    val totalBalance by viewModel.totalBalance.collectAsState()
+    val groupBalances by viewModel.groupBalances.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshBalances()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -60,11 +81,11 @@ fun GroupsScreen(
                 )
             }
             IconButton(
-                onClick = { /* Notifications */ },
+                onClick = { showCreateDialog = true },
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
             ) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.Default.Add, contentDescription = "Create Group", tint = MaterialTheme.colorScheme.onPrimary)
             }
         }
 
@@ -85,10 +106,13 @@ fun GroupsScreen(
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val prefix = if (totalBalance > 0) "+" else ""
+                val color = if (totalBalance < 0) Color(0xFFFFCCCC) else MaterialTheme.colorScheme.onPrimary
+                
                 Text(
-                    text = "+$25.00",
+                    text = "$prefix${String.format("%.2f", totalBalance)} LEI",
                     style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = color,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -108,18 +132,117 @@ fun GroupsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp) // padding for bottom bar
         ) {
-            items(groups) { group ->
-                GroupItem(
-                    group = group,
-                    onClick = { onGroupClick(group.id) }
-                )
+            if (groups.isEmpty() && !isLoading) {
+                item {
+                    Text(
+                        text = "No groups yet. Create one!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                items(groups) { group ->
+                    val balance = groupBalances[group.id] ?: 0.0
+                    GroupItem(
+                        group = group,
+                        balance = balance,
+                        onClick = { onGroupClick(group.id) }
+                    )
+                }
             }
         }
     }
+
+    if (showCreateDialog) {
+        var groupName by remember { mutableStateOf("") }
+        val selectedFriendIds = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Create New Group") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = groupName,
+                        onValueChange = { groupName = it },
+                        label = { Text("Group Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    if (friends.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Add Friends:", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 200.dp)
+                        ) {
+                            items(friends) { friend ->
+                                val isSelected = selectedFriendIds.contains(friend.id)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (isSelected) {
+                                                selectedFriendIds.remove(friend.id)
+                                            } else {
+                                                selectedFriendIds.add(friend.id)
+                                            }
+                                        }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { checked ->
+                                            if (checked) {
+                                                selectedFriendIds.add(friend.id)
+                                            } else {
+                                                selectedFriendIds.remove(friend.id)
+                                            }
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(friend.name)
+                                }
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "You don't have any friends added yet. You can add them from the Friends tab.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (groupName.isNotBlank()) {
+                            viewModel.createGroup(name = groupName, memberIds = selectedFriendIds.toList())
+                        }
+                        showCreateDialog = false
+                    }
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 @Composable
-fun GroupItem(group: Group, onClick: () -> Unit) {
+fun GroupItem(group: com.example.smartsplit.data.model.Group, balance: Double, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,7 +265,7 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = group.icon,
+                    imageVector = Icons.Default.Home, // Using a default icon for all real groups for now
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -159,28 +282,24 @@ fun GroupItem(group: Group, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${group.membersCount} members",
+                    text = "${group.memberIds.size} members",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                val balanceColor = if (group.balance == "Settled up") {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else if (group.isPositive) {
-                    Color(0xFF4CAF50) // Greenish
-                } else {
-                    MaterialTheme.colorScheme.error // Reddish
-                }
-                
-                Text(
-                    text = group.balance,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = balanceColor
-                )
+            val color = when {
+                balance > 0 -> Color(0xFF34C759)
+                balance < 0 -> Color(0xFFFF3B30)
+                else -> MaterialTheme.colorScheme.onSurface
             }
+            val prefix = if (balance > 0) "+" else ""
+
+            Text(
+                text = "$prefix${String.format("%.2f", balance)} LEI",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
         }
     }
 }

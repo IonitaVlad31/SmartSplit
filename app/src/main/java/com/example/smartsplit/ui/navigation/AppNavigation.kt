@@ -3,6 +3,7 @@ package com.example.smartsplit.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -71,10 +72,22 @@ fun AppNavigation(
         }
         composable("groupDetails/{groupId}") { backStackEntry ->
             val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+            val groupDetailsViewModel: com.example.smartsplit.viewModels.GroupDetailsViewModel = viewModel()
+            
+            val savedAmount = backStackEntry.savedStateHandle.get<Double>("scanned_amount")
+            val scannedAmountState = rememberUpdatedState(savedAmount)
+            
+            androidx.compose.runtime.LaunchedEffect(groupId) {
+                groupDetailsViewModel.initGroup(groupId)
+            }
+
             GroupDetailsScreen(
                 groupId = groupId,
+                viewModel = groupDetailsViewModel,
                 onBackClick = { navController.popBackStack() },
-                onScanClick = { navController.navigate("scanReceipt/$groupId") }
+                onScanClick = { navController.navigate("scanReceipt/$groupId") },
+                scannedAmount = scannedAmountState.value,
+                clearScannedAmount = { backStackEntry.savedStateHandle.remove<Double>("scanned_amount") }
             )
         }
         composable("chat/{chatId}") { backStackEntry ->
@@ -89,6 +102,9 @@ fun AppNavigation(
             com.example.smartsplit.ui.screens.ScanReceiptScreen(
                 onBackClick = { navController.popBackStack() },
                 onAmountScanned = { amount ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("scanned_amount", amount)
                     navController.popBackStack()
                 }
             )

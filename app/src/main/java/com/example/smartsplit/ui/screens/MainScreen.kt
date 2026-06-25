@@ -29,6 +29,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartsplit.viewModels.GroupsViewModel
 
 sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: String) {
     object Home : BottomNavItem("Home", Icons.Default.Home, "home_tab")
@@ -147,7 +149,9 @@ fun NavigationGraph(
         exitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
         composable(BottomNavItem.Home.route) {
+            val groupsViewModel: GroupsViewModel = viewModel()
             GroupsScreen(
+                viewModel = groupsViewModel,
                 onGroupClick = { groupId ->
                     // Navigate to group details via the PARENT navController
                     // because group details is a full-screen feature, hiding the bottom bar

@@ -19,36 +19,87 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.smartsplit.util.DebtMinimizer
-import com.example.smartsplit.util.Expense
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.smartsplit.data.model.Expense
+import com.example.smartsplit.data.model.User
 import com.example.smartsplit.util.Transaction
+import com.example.smartsplit.viewModels.GroupDetailsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailsScreen(
     groupId: String,
-    onBackClick: () -> Unit = {},
-    onScanClick: () -> Unit = {}
+    viewModel: com.example.smartsplit.viewModels.GroupDetailsViewModel = viewModel(),
+    onBackClick: () -> Unit,
+    onScanClick: () -> Unit,
+    scannedAmount: Double? = null,
+    clearScannedAmount: () -> Unit = {}
 ) {
-    val members = listOf("Alice", "Bob", "Charlie", "David")
+    val state by viewModel.state.collectAsState()
     
-    var expenses by remember { 
-        mutableStateOf(listOf(
-            Expense("Alice", 120.0, members),
-            Expense("Bob", 40.0, listOf("Bob", "Charlie", "David")),
-            Expense("Charlie", 30.0, listOf("Alice", "Charlie"))
-        ))
+    var showAddExpenseDialog by remember { mutableStateOf(false) }
+    var amountText by remember { mutableStateOf("") }
+    var descriptionText by remember { mutableStateOf("") }
+
+    androidx.compose.runtime.LaunchedEffect(scannedAmount) {
+        if (scannedAmount != null) {
+            amountText = scannedAmount.toString()
+            showAddExpenseDialog = true
+            clearScannedAmount()
+        }
     }
-    
-    val transactions = remember(expenses) { DebtMinimizer.minimizeDebts(expenses) }
+
+    if (showAddExpenseDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddExpenseDialog = false },
+            title = { Text("Add Expense") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = descriptionText,
+                        onValueChange = { descriptionText = it },
+                        label = { Text("What was this for?") },
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = amountText,
+                        onValueChange = { amountText = it },
+                        label = { Text("Amount (LEI)") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val amount = amountText.toDoubleOrNull()
+                        if (amount != null && descriptionText.isNotBlank()) {
+                            viewModel.addExpense(amount, descriptionText)
+                            showAddExpenseDialog = false
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddExpenseDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Trip to Paris") },
+                title = { Text(state.group?.name ?: "Loading...") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -70,10 +121,7 @@ fun GroupDetailsScreen(
                     Icon(Icons.Default.PhotoCamera, "Scan Receipt")
                 }
                 FloatingActionButton(
-                    onClick = { 
-                        // Add mock expense for testing
-                        expenses = expenses + Expense("David", 50.0, members)
-                    },
+                    onClick = { showAddExpenseDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
                     Icon(Icons.Default.Add, "Add Expense")
@@ -81,66 +129,88 @@ fun GroupDetailsScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            item {
-                AnimatedPieChart(expenses)
-                Spacer(modifier = Modifier.height(24.dp))
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                if (state.expenses.isNotEmpty()) {
+                    item {
+                        AnimatedPieChart(state.expenses, state.members)
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
 
-            item {
-                Text(
-                    text = "How to Settle Up",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                item {
+                    Text(
+                        text = "How to Settle Up",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (state.transactions.isEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) {
+                            Text(
+                                text = "Everyone is settled up!",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                    } else {
+                        state.transactions.forEach { tx ->
+                            TransactionItem(tx, state.members)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+
+                item {
+                    Text(
+                        text = "Recent Expenses",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 
-                if (transactions.isEmpty()) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
+                if (state.expenses.isEmpty()) {
+                    item {
                         Text(
-                            text = "Everyone is settled up!",
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            text = "No expenses yet. Add one!",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 } else {
-                    transactions.forEach { tx ->
-                        TransactionItem(tx)
+                    items(state.expenses) { expense ->
+                        ExpenseItem(expense, state.members)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
-            }
-
-            item {
-                Text(
-                    text = "Recent Expenses",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            
-            items(expenses.reversed()) { expense ->
-                ExpenseItem(expense)
             }
         }
     }
 }
 
 @Composable
-fun TransactionItem(transaction: Transaction) {
+fun TransactionItem(transaction: Transaction, members: Map<String, User>) {
+    val fromName = members[transaction.from]?.name ?: "Unknown"
+    val toName = members[transaction.to]?.name ?: "Unknown"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -165,7 +235,7 @@ fun TransactionItem(transaction: Transaction) {
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
-                    Text(text = transaction.from, fontWeight = FontWeight.Bold)
+                    Text(text = fromName, fontWeight = FontWeight.Bold)
                     Text(text = "Owes", style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -174,18 +244,20 @@ fun TransactionItem(transaction: Transaction) {
             
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${transaction.amount} LEI", 
+                    text = "${String.format("%.2f", transaction.amount)} LEI", 
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text(text = "to ${transaction.to}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "to $toName", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
 
 @Composable
-fun ExpenseItem(expense: Expense) {
+fun ExpenseItem(expense: Expense, members: Map<String, User>) {
+    val payerName = members[expense.paidBy]?.name ?: "Unknown"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -209,16 +281,24 @@ fun ExpenseItem(expense: Expense) {
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(text = expense.payerId, fontWeight = FontWeight.Bold)
+                    Text(text = payerName, fontWeight = FontWeight.Bold)
                     Text(
-                        text = "paid for ${expense.involvedIds.size} people",
+                        text = "paid for ${expense.splitAmong.size} people",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (expense.description.isNotBlank()) {
+                        Text(
+                            text = expense.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
             }
             Text(
-                text = "${expense.amount} LEI",
+                text = "${String.format("%.2f", expense.amount)} LEI",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -227,14 +307,14 @@ fun ExpenseItem(expense: Expense) {
 }
 
 @Composable
-fun AnimatedPieChart(expenses: List<com.example.smartsplit.util.Expense>) {
-    val spendingPerPerson = expenses.groupBy { it.payerId }
+fun AnimatedPieChart(expenses: List<Expense>, members: Map<String, User>) {
+    val spendingPerPerson = expenses.groupBy { it.paidBy }
         .mapValues { it.value.sumOf { exp -> exp.amount } }
     
     val totalSpending = spendingPerPerson.values.sum()
     if (totalSpending <= 0.0) return
 
-    val angles = spendingPerPerson.values.map { (it / totalSpending) * 360f }
+    val angles = spendingPerPerson.values.map { (it / totalSpending).toFloat() * 360f }
     val colors = listOf(
         androidx.compose.ui.graphics.Color(0xFFFF3B30), // Vibrant Red
         androidx.compose.ui.graphics.Color(0xFF34C759), // Vibrant Green
@@ -248,60 +328,77 @@ fun AnimatedPieChart(expenses: List<com.example.smartsplit.util.Expense>) {
     LaunchedEffect(expenses) {
         animationProgress.animateTo(
             targetValue = 1f,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 1500)
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 1000, easing = androidx.compose.animation.core.FastOutSlowInEasing)
         )
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Box(modifier = Modifier.size(200.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.size(240.dp),
+            contentAlignment = Alignment.Center
+        ) {
             androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                val strokeWidth = 40.dp.toPx()
                 var startAngle = -90f
-                val sweepAngles = angles.map { it.toFloat() * animationProgress.value }
                 
-                sweepAngles.forEachIndexed { index, sweepAngle ->
+                angles.forEachIndexed { index, angle ->
+                    val sweepAngle = angle * animationProgress.value
                     drawArc(
                         color = colors[index % colors.size],
                         startAngle = startAngle,
                         sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 40.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Butt)
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
                     )
                     startAngle += sweepAngle
                 }
             }
-            Text(
-                text = "Total\n${totalSpending.toInt()} LEI",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "Total",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+                Text(
+                    text = "${totalSpending.toInt()} LEI",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val keys = spendingPerPerson.keys.toList()
-        keys.chunked(3).forEach { rowKeys ->
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                rowKeys.forEach { person ->
-                    val index = keys.indexOf(person)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(colors[index % colors.size]))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = person, 
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = androidx.compose.ui.graphics.Color.White,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            spendingPerPerson.keys.forEachIndexed { index, payerId ->
+                val payerName = members[payerId]?.name ?: "Unknown"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(colors[index % colors.size])
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = payerName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                    )
                 }
             }
         }
