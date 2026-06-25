@@ -172,14 +172,13 @@ class FirebaseRepository {
     fun observeMessages(chatId: String): kotlinx.coroutines.flow.Flow<List<Message>> = kotlinx.coroutines.flow.callbackFlow {
         val listener = db.collection("messages")
             .whereEqualTo("chatId", chatId)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {
-                    val messages = snapshot.toObjects(Message::class.java)
+                    val messages = snapshot.toObjects(Message::class.java).sortedByDescending { it.timestamp }
                     trySend(messages)
                 }
             }
