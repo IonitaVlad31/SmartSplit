@@ -49,11 +49,12 @@ class FirebaseRepository {
         return snapshot.documents.any { it.id != excludeUserId }
     }
 
-    suspend fun createGroup(group: Group) {
+    suspend fun createGroup(group: Group): String {
         // If the ID is empty, we generate a new document reference
         val docRef = if (group.id.isEmpty()) db.collection("groups").document() else db.collection("groups").document(group.id)
         val groupWithId = group.copy(id = docRef.id)
         docRef.set(groupWithId).await()
+        return docRef.id
     }
 
     fun observeGroup(groupId: String): kotlinx.coroutines.flow.Flow<Group?> = kotlinx.coroutines.flow.callbackFlow {
@@ -246,5 +247,25 @@ class FirebaseRepository {
             name = "" 
         )
         return createChatRoom(newRoom)
+    }
+
+    suspend fun getOrCreateDirectGroup(userId1: String, userId2: String, friendName: String): String {
+        val snapshot = db.collection("groups")
+            .whereArrayContains("memberIds", userId1)
+            .get()
+            .await()
+        
+        val existingGroup = snapshot.toObjects(Group::class.java)
+            .find { it.memberIds.contains(userId2) && it.memberIds.size == 2 }
+            
+        if (existingGroup != null) {
+            return existingGroup.id
+        }
+        
+        val newGroup = Group(
+            name = "Split cu $friendName",
+            memberIds = listOf(userId1, userId2)
+        )
+        return createGroup(newGroup)
     }
 }

@@ -114,5 +114,14 @@ fun AppNavigation(
                 onBackClick = { navController.popBackStack() }
             )
         }
+        composable("createGroup") {
+            com.example.smartsplit.ui.screens.CreateGroupScreen(
+                onBackClick = { navController.popBackStack() },
+                onGroupCreated = { groupId ->
+                    navController.popBackStack()
+                    navController.navigate("groupDetails/$groupId")
+                }
+            )
+        }
     }
 }

@@ -84,4 +84,13 @@ class FriendsViewModel : ViewModel() {
             null
         }
     }
+
+    suspend fun getDirectGroupWith(friendId: String, friendName: String): String? {
+        val uid = auth.currentUser?.uid ?: return null
+        return try {
+            repository.getOrCreateDirectGroup(uid, friendId, friendName)
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

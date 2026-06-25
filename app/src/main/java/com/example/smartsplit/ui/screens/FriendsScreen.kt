@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FriendsScreen(
     onChatClick: (String) -> Unit,
+    onSplitClick: (String) -> Unit,
     viewModel: FriendsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -156,6 +157,15 @@ fun FriendsScreen(
                                         onChatClick(chatId)
                                     }
                                 }
+                            },
+                            onSplitClick = {
+                                coroutineScope.launch {
+                                    val friendName = friend.name.ifEmpty { friend.handle }
+                                    val groupId = viewModel.getDirectGroupWith(friend.id, friendName)
+                                    if (groupId != null) {
+                                        onSplitClick(groupId)
+                                    }
+                                }
                             }
                         )
                     }
@@ -166,7 +176,7 @@ fun FriendsScreen(
 }
 
 @Composable
-fun FriendItem(friend: User, onMessageClick: () -> Unit) {
+fun FriendItem(friend: User, onMessageClick: () -> Unit, onSplitClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -212,7 +222,7 @@ fun FriendItem(friend: User, onMessageClick: () -> Unit) {
             Spacer(modifier = Modifier.width(8.dp))
             
             Button(
-                onClick = { /* Split */ },
+                onClick = onSplitClick,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)

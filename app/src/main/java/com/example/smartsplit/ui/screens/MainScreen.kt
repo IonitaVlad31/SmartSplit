@@ -163,6 +163,9 @@ fun NavigationGraph(
             FriendsScreen(
                 onChatClick = { chatId ->
                     parentNavController.navigate("chat/$chatId")
+                },
+                onSplitClick = { groupId ->
+                    parentNavController.navigate("groupDetails/$groupId")
                 }
             )
         }
