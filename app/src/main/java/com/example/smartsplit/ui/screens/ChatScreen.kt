@@ -29,7 +29,7 @@ fun ChatScreen(
 ) {
     val state by viewModel.state.collectAsState()
     
-    // Load chat when screen opens
+    
     LaunchedEffect(chatId) {
         viewModel.loadChat(chatId)
     }
@@ -63,7 +63,7 @@ fun ChatScreen(
                     value = currentMessage,
                     onValueChange = { currentMessage = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Scrie un mesaj...") },
+                    placeholder = { Text("Type a message...") },
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,

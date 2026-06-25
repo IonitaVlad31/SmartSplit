@@ -35,7 +35,7 @@ import com.example.smartsplit.viewModels.GroupsViewModel
 sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: String) {
     object Home : BottomNavItem("Home", Icons.Default.Home, "home_tab")
     object Friends : BottomNavItem("Friends", Icons.Default.People, "friends_tab")
-    object Add : BottomNavItem("", Icons.Default.Add, "add_tab") // Empty title for central prominent button
+    object Add : BottomNavItem("", Icons.Default.Add, "add_tab") 
     object Inbox : BottomNavItem("Inbox", Icons.Default.Chat, "inbox_tab")
     object Profile : BottomNavItem("Profile", Icons.Default.Person, "profile_tab")
 }
@@ -51,7 +51,7 @@ fun MainScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         bottomBar = { BottomNavigationBar(navController = navController) },
         content = { paddingValues ->
-            // Use fillMaxSize so content goes UNDER the navigation bar
+            
             Box(modifier = Modifier.fillMaxSize()) {
                 NavigationGraph(navController = navController, parentNavController = parentNavController, onLogoutClick = onLogoutClick)
             }
@@ -70,7 +70,7 @@ fun BottomNavigationBar(navController: NavController) {
     )
     
     NavigationBar(
-        containerColor = androidx.compose.ui.graphics.Color(0xEE050505), // Very dark, almost black, with slight transparency
+        containerColor = androidx.compose.ui.graphics.Color(0xEE050505), 
         contentColor = androidx.compose.ui.graphics.Color.White,
         modifier = Modifier.background(androidx.compose.ui.graphics.Color(0xEE050505))
     ) {
@@ -106,7 +106,7 @@ fun BottomNavigationBar(navController: NavController) {
                         }
                     },
                     selected = false,
-                    onClick = { /* Handled by FAB onClick */ },
+                    onClick = {  },
                     alwaysShowLabel = false
                 )
             } else {
@@ -153,8 +153,8 @@ fun NavigationGraph(
             GroupsScreen(
                 viewModel = groupsViewModel,
                 onGroupClick = { groupId ->
-                    // Navigate to group details via the PARENT navController
-                    // because group details is a full-screen feature, hiding the bottom bar
+                    
+                    
                     parentNavController.navigate("groupDetails/$groupId")
                 }
             )

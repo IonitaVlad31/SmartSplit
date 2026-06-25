@@ -73,7 +73,7 @@ fun CreateGroupScreen(
             OutlinedTextField(
                 value = state.groupName,
                 onValueChange = { viewModel.updateGroupName(it) },
-                label = { Text("Group Name (e.g. Excursie Brașov)") },
+                label = { Text("Group Name (e.g. Ski Trip)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -101,7 +101,7 @@ fun CreateGroupScreen(
                 }
             } else if (state.friends.isEmpty()) {
                 Text(
-                    text = "Nu ai niciun prieten adăugat. Adaugă prieteni mai întâi din secțiunea Friends.",
+                    text = "You don't have any friends added. Add friends first from the Friends section.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {

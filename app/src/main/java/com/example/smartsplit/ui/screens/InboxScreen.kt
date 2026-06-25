@@ -70,7 +70,7 @@ fun InboxScreen(
             }
         } else if (state.chatRooms.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Nu ai niciun mesaj", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "You have no messages", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -103,11 +103,11 @@ fun InboxScreen(
 @Composable
 fun ChatListItem(room: ChatRoom, currentUserId: String, otherUser: com.example.smartsplit.data.model.User?, onClick: () -> Unit) {
     val displayName = if (room.name.isNotBlank()) room.name 
-                      else otherUser?.let { "${it.name} (@${it.handle})" } ?: "Chat Privat"
+                      else otherUser?.let { "${it.name} (@${it.handle})" } ?: "Private Chat"
     val displayInitial = if (room.name.isNotBlank()) room.name.firstOrNull()?.toString() ?: "C"
                          else otherUser?.name?.firstOrNull()?.toString() ?: "C"
     
-    // Formatting timestamp
+    
     val timeString = if (room.lastTimestamp > 0) {
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         sdf.format(Date(room.lastTimestamp))
@@ -160,7 +160,7 @@ fun ChatListItem(room: ChatRoom, currentUserId: String, otherUser: com.example.s
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = room.lastMessage.takeIf { it.isNotEmpty() } ?: "Fără mesaje", 
+                    text = room.lastMessage.takeIf { it.isNotEmpty() } ?: "No messages", 
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (unreadCount > 0) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

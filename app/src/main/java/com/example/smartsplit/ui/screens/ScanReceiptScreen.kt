@@ -75,7 +75,7 @@ fun ScanReceiptScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Back Button Row
+        
         if (onBackClick != null) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
@@ -108,7 +108,7 @@ fun ScanReceiptScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Futuristic Scanner Viewfinder
+        
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -134,7 +134,7 @@ fun ScanReceiptScreen(
                 )
             }
             
-            // Draw Canvas overlays
+            
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height
@@ -256,7 +256,7 @@ fun CameraPreview(
                         imageAnalyzer
                     )
                 } catch (exc: Exception) {
-                    // Log error
+                    
                 }
             }, executor)
 

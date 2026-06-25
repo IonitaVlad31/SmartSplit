@@ -64,14 +64,14 @@ class GroupsViewModel(
                 }
                 viewModelScope.launch {
                     repository.observeUser(user.uid)
-                        .catch { /* ignore */ }
+                        .catch {  }
                         .collect { dbUser ->
                             if (dbUser != null) {
                                 try {
                                     val userFriends = repository.getFriends(dbUser.friendIds)
                                     _friends.value = userFriends
                                 } catch (e: Exception) {
-                                    // ignore
+                                    
                                 }
                             }
                         }
@@ -143,7 +143,7 @@ class GroupsViewModel(
                 _totalOwedToMe.value = owedToMe
                 _groupBalances.value = groupBalMap
             } catch (e: Exception) {
-                // Ignore errors for now
+                
             }
         }
     }

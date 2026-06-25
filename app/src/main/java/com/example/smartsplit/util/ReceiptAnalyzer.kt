@@ -14,7 +14,7 @@ class ReceiptAnalyzer(
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     
-    // We only process one frame every few seconds to avoid overlapping processing
+    
     private var lastAnalyzedTimestamp = 0L
 
     @SuppressLint("UnsafeOptInUsageError")
@@ -48,18 +48,14 @@ class ReceiptAnalyzer(
         }
     }
 
-    /**
-     * A simple heuristic to find the "Total" on a receipt:
-     * We look for the largest valid number that appears after standard text.
-     * In a real app, you would look for the word "TOTAL" and the number next to it.
-     */
+    
     private fun extractHighestNumber(text: String): Double {
         val regex = Regex("""\d+[\.,]\d{2}""")
         val matches = regex.findAll(text)
         
         var maxAmount = 0.0
         for (match in matches) {
-            // Replace comma with dot to parse correctly
+            
             val numStr = match.value.replace(',', '.')
             val num = numStr.toDoubleOrNull()
             if (num != null && num > maxAmount) {

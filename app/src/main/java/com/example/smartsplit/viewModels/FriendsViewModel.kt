@@ -64,7 +64,7 @@ class FriendsViewModel : ViewModel() {
                 } else {
                     repository.addFriend(uid, friend.id)
                     _state.value = _state.value.copy(isAddingFriend = false, addFriendSuccess = true)
-                    loadFriends() // reload list
+                    loadFriends() 
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isAddingFriend = false, error = e.message)

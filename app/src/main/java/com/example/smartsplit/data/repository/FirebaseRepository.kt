@@ -50,7 +50,7 @@ class FirebaseRepository {
     }
 
     suspend fun createGroup(group: Group): String {
-        // If the ID is empty, we generate a new document reference
+        
         val docRef = if (group.id.isEmpty()) db.collection("groups").document() else db.collection("groups").document(group.id)
         val groupWithId = group.copy(id = docRef.id)
         docRef.set(groupWithId).await()
@@ -141,7 +141,7 @@ class FirebaseRepository {
                     )
                 ).await()
             } catch (e: Exception) {
-                // Ignore if chat room doesn't exist yet
+                
             }
         }
     }

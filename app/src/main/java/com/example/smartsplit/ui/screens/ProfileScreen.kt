@@ -60,12 +60,12 @@ fun ProfileScreen(
     var showEditDialog by remember { mutableStateOf(false) }
     var showPlaceholderDialog by remember { mutableStateOf<String?>(null) }
 
-    // Dialog for placeholders (Payment, Notifications, Security)
+    
     if (showPlaceholderDialog != null) {
         AlertDialog(
             onDismissRequest = { showPlaceholderDialog = null },
             title = { Text(showPlaceholderDialog!!) },
-            text = { Text("Această funcționalitate va fi disponibilă în versiunea finală a proiectului!") },
+            text = { Text("This feature will be available in the final version of the project!") },
             confirmButton = {
                 TextButton(onClick = { showPlaceholderDialog = null }) {
                     Text("OK")
@@ -74,7 +74,7 @@ fun ProfileScreen(
         )
     }
 
-    // Dialog for Editing Profile
+    
     if (showEditDialog && state.user != null) {
         var editName by remember { mutableStateOf(state.user!!.name) }
         var editHandle by remember { mutableStateOf(state.user!!.handle) }
@@ -84,13 +84,13 @@ fun ProfileScreen(
                 showEditDialog = false
                 viewModel.clearError()
             },
-            title = { Text("Editează Profilul") },
+            title = { Text("Edit Profile") },
             text = {
                 Column {
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Nume / Nume complet") },
+                        label = { Text("Name / Full name") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -98,7 +98,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = editHandle,
                         onValueChange = { editHandle = it },
-                        label = { Text("Handle (ex: nume123)") },
+                        label = { Text("Handle (e.g. name123)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         prefix = { Text("@") }
@@ -122,7 +122,7 @@ fun ProfileScreen(
                     },
                     enabled = !state.isSaving
                 ) {
-                    Text(if (state.isSaving) "Se salvează..." else "Salvează")
+                    Text(if (state.isSaving) "Saving..." else "Save")
                 }
             },
             dismissButton = {
@@ -133,7 +133,7 @@ fun ProfileScreen(
                     },
                     enabled = !state.isSaving
                 ) {
-                    Text("Anulează")
+                    Text("Cancel")
                 }
             }
         )
@@ -150,11 +150,11 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Profil",
+                text = "Profile",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            IconButton(onClick = { /* Settings */ }) {
+            IconButton(onClick = {  }) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
             }
         }
@@ -176,7 +176,7 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Premium Glowing Avatar
+            
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -214,13 +214,13 @@ fun ProfileScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = user?.name?.takeIf { it.isNotBlank() } ?: "User Fără Nume",
+                text = user?.name?.takeIf { it.isNotBlank() } ?: "Unnamed User",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White
             )
             Text(
-                text = if (!user?.handle.isNullOrBlank()) "@${user?.handle}" else "@adauga_handle",
+                text = if (!user?.handle.isNullOrBlank()) "@${user?.handle}" else "@add_handle",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Gray
             )
@@ -231,33 +231,33 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                StatCard(modifier = Modifier.weight(1f), title = "Tu Datorezi", amount = String.format("%.2f LEI", totalOwe), color = MaterialTheme.colorScheme.error)
-                StatCard(modifier = Modifier.weight(1f), title = "Ai de Primit", amount = String.format("%.2f LEI", totalOwedToMe), color = Color(0xFF34C759))
+                StatCard(modifier = Modifier.weight(1f), title = "You Owe", amount = String.format("%.2f LEI", totalOwe), color = MaterialTheme.colorScheme.error)
+                StatCard(modifier = Modifier.weight(1f), title = "You Are Owed", amount = String.format("%.2f LEI", totalOwedToMe), color = Color(0xFF34C759))
             }
             
             Spacer(modifier = Modifier.height(32.dp))
 
-            MenuButton(icon = Icons.Default.Edit, text = "Editează Profilul") { 
+            MenuButton(icon = Icons.Default.Edit, text = "Edit Profile") { 
                 showEditDialog = true 
             }
             Spacer(modifier = Modifier.height(16.dp))
-            MenuButton(icon = Icons.Default.Payment, text = "Metode de Plată") { 
-                showPlaceholderDialog = "Metode de Plată"
+            MenuButton(icon = Icons.Default.Payment, text = "Payment Methods") { 
+                showPlaceholderDialog = "Payment Methods"
             }
             Spacer(modifier = Modifier.height(16.dp))
-            MenuButton(icon = Icons.Default.Add, text = "Curs Valutar") { 
+            MenuButton(icon = Icons.Default.Add, text = "Exchange Rates") { 
                 onCurrenciesClick()
             }
             Spacer(modifier = Modifier.height(16.dp))
             MenuSwitch(
                 icon = Icons.Default.Notifications,
-                text = "Notificări",
+                text = "Notifications",
                 checked = notificationsEnabled,
                 onCheckedChange = { viewModel.toggleNotifications(it) }
             )
             Spacer(modifier = Modifier.height(16.dp))
-            MenuButton(icon = Icons.Default.Security, text = "Securitate și Confidențialitate") { 
-                showPlaceholderDialog = "Securitate și Confidențialitate"
+            MenuButton(icon = Icons.Default.Security, text = "Security & Privacy") { 
+                showPlaceholderDialog = "Security & Privacy"
             }
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -270,7 +270,7 @@ fun ProfileScreen(
             ) {
                 Icon(Icons.Default.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Deconectare", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Log Out", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
             Spacer(modifier = Modifier.height(100.dp))
         }

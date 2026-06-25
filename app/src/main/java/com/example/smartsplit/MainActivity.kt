@@ -18,8 +18,8 @@ class MainActivity : ComponentActivity() {
                     modifier = androidx.compose.ui.Modifier.background(
                         brush = androidx.compose.ui.graphics.Brush.radialGradient(
                             colors = listOf(
-                                androidx.compose.ui.graphics.Color(0xFF150A0A), // Very subtle, almost black dark red
-                                androidx.compose.ui.graphics.Color(0xFF0A0A0A)  // True dark background
+                                androidx.compose.ui.graphics.Color(0xFF150A0A), 
+                                androidx.compose.ui.graphics.Color(0xFF0A0A0A)  
                             ),
                             radius = 2000f
                         )

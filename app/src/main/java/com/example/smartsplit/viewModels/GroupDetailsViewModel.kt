@@ -94,7 +94,7 @@ class GroupDetailsViewModel(
         val currentUser = FirebaseAuth.getInstance().currentUser ?: return
         val currentGroup = _state.value.group ?: return
 
-        // Using simple logic: Split equally among all group members
+        
         val splitAmong = currentGroup.memberIds
         if (splitAmong.isEmpty()) return
 

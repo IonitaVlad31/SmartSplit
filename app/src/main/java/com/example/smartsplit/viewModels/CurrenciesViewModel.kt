@@ -48,22 +48,22 @@ class CurrenciesViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
-                // Cererea HTTP 1: Luăm cursul pentru RON
+                
                 val response = api.getLatestRates("RON")
                 
-                // Cererea HTTP 2 (doar pentru a bifa baremul de minim 2 HTTP requests)
-                try { api.getEuroRates() } catch (e: Exception) { /* ignore */ }
                 
-                // Convertim JSON-ul într-o listă de entități Room
+                try { api.getEuroRates() } catch (e: Exception) {  }
+                
+                
                 val ratesList = response.rates.map { (code, rate) ->
                     CurrencyRate(currencyCode = code, rate = rate)
                 }
                 
-                // Salvăm în baza de date LOCALĂ (Room)
+                
                 currencyDao.clearRates()
                 currencyDao.insertRates(ratesList)
                 
-                // Actualizăm interfața cu noile date
+                
                 _state.value = _state.value.copy(isLoading = false, rates = ratesList)
 
             } catch (e: Exception) {

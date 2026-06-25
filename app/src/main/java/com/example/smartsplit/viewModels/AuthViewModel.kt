@@ -24,7 +24,7 @@ class AuthViewModel : ViewModel() {
     private val repository = FirebaseRepository()
 
     init {
-        // Check if user is already logged in when ViewModel is created
+        
         if (auth.currentUser != null) {
             _authState.value = AuthState(isAuthenticated = true)
         }
@@ -63,7 +63,7 @@ class AuthViewModel : ViewModel() {
                 if (task.isSuccessful) {
                     val firebaseUser = task.result?.user
                     if (firebaseUser != null) {
-                        // Create the User document locally
+                        
                         val namePrefix = email.substringBefore("@")
                         val newUser = User(
                             id = firebaseUser.uid,
@@ -71,7 +71,7 @@ class AuthViewModel : ViewModel() {
                             name = namePrefix,
                             handle = namePrefix
                         )
-                        // Save it to Firestore
+                        
                         viewModelScope.launch {
                             try {
                                 repository.saveUser(newUser)

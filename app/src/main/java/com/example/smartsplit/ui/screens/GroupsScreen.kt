@@ -130,7 +130,7 @@ fun GroupsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp) // padding for bottom bar
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp) 
         ) {
             if (groups.isEmpty() && !isLoading) {
                 item {
@@ -265,7 +265,7 @@ fun GroupItem(group: com.example.smartsplit.data.model.Group, balance: Double, o
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Home, // Using a default icon for all real groups for now
+                    imageVector = Icons.Default.Home, 
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )

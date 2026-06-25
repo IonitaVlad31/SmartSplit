@@ -41,10 +41,10 @@ fun FriendsScreen(
                 showAddDialog = false
                 viewModel.resetAddFriendState() 
             },
-            title = { Text("Adaugă Prieten") },
+            title = { Text("Add Friend") },
             text = {
                 Column {
-                    Text("Introdu handle-ul (ex: @mihai)")
+                    Text("Enter handle (e.g. @john)")
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = newFriendHandle,
@@ -72,7 +72,7 @@ fun FriendsScreen(
                     if (state.isAddingFriend) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Adaugă")
+                        Text("Add")
                     }
                 }
             },
@@ -81,7 +81,7 @@ fun FriendsScreen(
                     showAddDialog = false
                     viewModel.resetAddFriendState()
                 }) {
-                    Text("Anulează")
+                    Text("Cancel")
                 }
             }
         )
@@ -137,7 +137,7 @@ fun FriendsScreen(
                 }
             } else if (state.friends.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "Nu ai niciun prieten adăugat", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "You don't have any friends added", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(

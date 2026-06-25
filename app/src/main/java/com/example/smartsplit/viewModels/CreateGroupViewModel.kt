@@ -84,7 +84,7 @@ class CreateGroupViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val memberIds = currentSelected.toMutableList()
-                memberIds.add(uid) // Add self
+                memberIds.add(uid) 
                 
                 val newGroup = Group(
                     name = currentName,

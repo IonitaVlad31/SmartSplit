@@ -72,7 +72,7 @@ class ChatViewModel : ViewModel() {
             try {
                 repository.sendMessage(msg)
             } catch (e: Exception) {
-                // Handle error if needed
+                
             }
         }
     }

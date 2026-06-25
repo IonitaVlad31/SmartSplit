@@ -316,11 +316,11 @@ fun AnimatedPieChart(expenses: List<Expense>, members: Map<String, User>) {
 
     val angles = spendingPerPerson.values.map { (it / totalSpending).toFloat() * 360f }
     val colors = listOf(
-        androidx.compose.ui.graphics.Color(0xFFFF3B30), // Vibrant Red
-        androidx.compose.ui.graphics.Color(0xFF34C759), // Vibrant Green
-        androidx.compose.ui.graphics.Color(0xFF007AFF), // Vibrant Blue
-        androidx.compose.ui.graphics.Color(0xFFFF9500), // Vibrant Orange
-        androidx.compose.ui.graphics.Color(0xFFAF52DE)  // Vibrant Purple
+        androidx.compose.ui.graphics.Color(0xFFFF3B30), 
+        androidx.compose.ui.graphics.Color(0xFF34C759), 
+        androidx.compose.ui.graphics.Color(0xFF007AFF), 
+        androidx.compose.ui.graphics.Color(0xFFFF9500), 
+        androidx.compose.ui.graphics.Color(0xFFAF52DE)  
     )
 
     val animationProgress = remember { androidx.compose.animation.core.Animatable(0f) }
